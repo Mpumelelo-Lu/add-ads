@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AlgoHive – Dashboard (Dynamic)</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+  <style>
+    :root {
+      --page: #0b1220;
+      --bg: #ffffff;
+      --muted: #64748b;
+      --ink: #0f172a;
+      --olive: #556B2F;
+      --brand: #f59e0b;
+      --line: #e2e8f0
+    }
+
+    html,
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink)
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      height: 40px;
+      padding: 0 .875rem;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      font-weight: 600
+    }
+
+    .input {
+      height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0 .75rem
+    }
+
+    .tab {
+      height: 36px;
+      border-radius: 8px;
+      padding: 0 .75rem
+    }
+
+    .tab-active {
+      background: #111827;
+      color: #fff
+    }
+
+    /* UPDATED FOR RESPONSIVENESS */
+    #layout {
+      --sb: 220px;
+      display: grid;
+      grid-template-columns: 1fr; /* Mobile-first: 1 column */
+      min-height: 100vh
+    }
+    #ah-sidebar {
+      transition: transform .3s ease, width .2s ease;
+      width: 280px; /* Mobile width */
+      max-width: 85vw;
+      position: fixed; /* Mobile overlay */
+      z-index: 50;
+      height: 100vh;
+      transform: translateX(-100%); /* Hidden by default */
+    }
+    #ah-sidebar.is-open {
+      transform: translateX(0); /* Show sidebar */
+    }
+
+    /* Desktop styles */
+    @media (min-width: 768px) {
+      #layout {
+        grid-template-columns: var(--sb) 1fr /* 2-col grid on desktop */
+      }
+      #layout.is-collapsed { --sb: 64px }
+      #ah-sidebar {
+        position: sticky; /* Back to sticky */
+        width: var(--sb); /* Use variable width */
+        max-width: none;
+        transform: translateX(0); /* Always visible */
+        z-index: auto;
+      }
+    }
+    /* END RESPONSIVE UPDATES */
+
+
+    #ah-sidebar[data-collapsed="true"] .label,
+    #ah-sidebar[data-collapsed="true"] .chevron {
+      display: none
+    }
+
+    #ah-sidebar details .sub {
+      transition: height .2s ease
+    }
+
+    #ah-sidebar[data-collapsed="true"] details>.sub {
+      display: none !important
+    }
+
+    #ah-sidebar[data-collapsed="true"] nav a,
+    #ah-sidebar[data-collapsed="true"] details>summary {
+      justify-content: center;
+      gap: .25rem
+    }
+
+    #ah-sidebar[data-collapsed="true"] details>summary span {
+      gap: 0
+    }
+
+    #ah-sidebar .footer {
+      transition: all .2s ease
+    }
+
+    #ah-sidebar[data-collapsed="true"] .footer {
+      justify-content: center;
+      flex-direction: column;
+      gap: 12px
+    }
+
+    #ah-sidebar[data-collapsed="true"] .btn-collapse :is(svg, i) {
+      transform: rotate(180deg)
+    }
+
+    /* Hide desktop collapse button on mobile */
+    #ah-collapse { display: none; }
+    @media (min-width: 768px) {
+      #ah-collapse { display: inline-flex; } /* Show on desktop */
+    }
+
+    /* Perf tiles */
+    .ps-tile {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 14px 16px;
+      background: #fff
+    }
+
+    .ps-label {
+      color: #64748b;
+      font-weight: 500;
+      font-size: .85rem
+    }
+
+    .ps-value {
+      font-weight: 600;
+      font-size: 1rem;
+      margin-top: 2px
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none
+    }
+
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none
+    }
+
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none
+    }
+
+    canvas {
+      max-width: 100%;
+      height: auto
+    }
+
+    table {
+      max-width: 100%
+    }
+
+    /* refresh spin */
+    @keyframes ah-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .spin i {
+      animation: ah-spin 0.8s linear infinite;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen overflow-x-hidden">
+  <div id="layout">
+    <div id="ah-overlay" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"></div>
+    <aside id="ah-sidebar" data-collapsed="false"
+      class="border-r border-slate-200 h-[100vh] bg-white flex flex-col overflow-hidden">
+      <div class="px-4 py-4 flex items-center gap-3 border-b border-slate-200">
+        <img src="https://static.wixstatic.com/media/ac771e_af06d86a7a1f4abd87e52e45f3bcbd96~mv2.png"
+          alt="AlgoHive Logo" class="w-10 h-10 object-contain" />
+        <div class="min-w-0">
+          <div class="font-bold text-[15px] text-slate-900 label">AlgoHive</div>
+          <div class="text-[11px] text-slate-500 label">Where Smart Capital Gathers</div>
+        </div>
+      </div>
+
+      <nav id="main-nav" class="p-2 text-[14px] flex-1 overflow-y-auto">
+        <a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50 font-medium text-slate-900"
+          href="/home.html" title="Home">
+          <i class="fa-solid fa-house text-slate-500 w-4 shrink-0"></i><span class="label">Home</span>
+        </a>
+
+        <details class="group mt-1">
+          <summary
+            class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 cursor-pointer font-medium text-slate-900">
+            <span class="flex items-center gap-3">
+              <i class="fa-regular fa-user w-4 text-slate-500"></i><span class="label">Portfolio</span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform chevron"></i>
+          </summary>
+          <div class="ml-8 mt-1 flex flex-col sub">
+            <a class="px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2" href="/my-strategies.html"><i
+                class="fa-solid fa-chart-pie w-4 text-slate-500"></i><span class="label">My Strategies</span></a>
+           </div>
+        </details>
+
+        <details class="group mt-1">
+          <summary
+            class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-50 cursor-pointer font-medium text-slate-900">
+            <span class="flex items-center gap-3">
+              <i class="fa-solid fa-link w-4 text-slate-500"></i><span class="label">Invest</span>
+            </span>
+            <i class="fa-solid fa-chevron-down text-slate-400 group-open:rotate-180 transition-transform chevron"></i>
+          </summary>
+          <div class="ml-8 mt-1 flex flex-col sub">
+            <a class="px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2" href="strategies.html"><i
+                class="fa-solid fa-chart-line w-4 text-slate-500"></i><span class="label">OpenStrategies</span></a>
+            
+          </div>
+        </details>
+
+        
+       
+        <a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50" href="support.html"><i
+            class="fa-solid fa-life-ring w-4 text-slate-500"></i><span class="label">Support</span></a>
+        <a class="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-50" href="legal.html"><i
+            class="fa-solid fa-scale-balanced w-4 text-slate-500"></i><span class="label">Legal</span></a>
+      </nav>
+
+      <div class="p-3 border-t border-slate-200 footer flex items-center justify-between gap-2">
+          <a href="settings.html" id="ah-settings" aria-current="page"
+            class="btn btn-settings h-10 w-10 p-0 rounded-xl border-0" title="Settings">
+            <i class="fa-solid fa-gear"></i>
+          </a>
+      
+          <button id="ah-collapse"
+            class="btn btn-collapse h-10 w-10 p-0 rounded-xl bg-slate-100 hover:bg-slate-200 border-0" title="Collapse">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+      </div>
+    </aside>
+
+    <main class="flex-1 min-w-0">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white sticky top-0 z-30">
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+          <button id="ah-mobile-menu-btn" class="md:hidden btn h-10 w-10 p-0 rounded-xl border-0" title="Open Menu">
+              <i class="fa-solid fa-bars"></i>
+          </button>
+          <div class="relative w-full hidden md:block max-w-[460px]">
+            
+            
+          </div>
+          <h1 class="text-xl font-bold text-slate-800 md:hidden truncate">Dashboard</h1>
+        </div>
+
+        <div class="flex items-center gap-3">
+        
+
+          <img id="hdr-avatar"
+            src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='100%' height='100%' fill='%23f1f5f9'/></svg>"
+            alt="Profile" class="w-9 h-9 rounded-full object-cover border border-slate-200" />
+
+          <button id="hdr-profile-btn" class="flex items-center gap-2 text-slate-900 font-medium hover:text-slate-700">
+          <span id="hdr-name" class="hidden lg:inline-block">—</span>
+            <i class="fa-solid fa-chevron-down text-slate-500 text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="px-4 md:px-6 py-6 grid grid-cols-12 gap-6 min-w-0">
+        <section id="portfolio-card" class="card border border-slate-200 shadow-none col-span-12 lg:col-span-9 min-w-0">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+            <div>
+              <h3 class="font-normal text-slate-800">Your portfolio</h3>
+              <div class="mt-1 text-sm text-slate-500" id="pf-updated">—</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button data-range="1D" class="tab tab-active text-[13px]">1D</button>
+              <button data-range="1M" class="tab text-[13px]">1M</button>
+              <button data-range="1Y" class="tab text-[13px]">1Y</button>
+              <button data-range="ALL" class="tab text-[13px]">All</button>
+              <button id="pf-refresh"
+                class="ml-2 h-9 w-9 rounded-lg border border-slate-200 hover:bg-slate-50 grid place-items-center"
+                title="Refresh">
+                <i class="fa-solid fa-rotate-right"></i>
+              </button>
+            </div>
+          </div>
+          <div class="px-5 pt-4">
+            <div class="flex items-baseline gap-3">
+              <div class="text-2xl font-bold" id="pf-value">—</div>
+              <div class="text-lg font-normal" id="pf-change" data-sign="-">—</div>
+            </div>
+          </div>
+          <div class="px-2 pb-4 pt-2">
+            <div class="h-[260px]"><canvas id="pf-chart" class="max-w-full"></canvas></div>
+            <div class="px-3 mt-1 text-[12px] text-slate-400 flex justify-between select-none">
+              <span>10 AM</span><span>11 AM</span><span>2 PM</span><span>4 PM</span>
+            </div>
+          </div>
+        </section>
+
+        <aside class="col-span-12 lg:col-span-3 lg:row-span-5 grid gap-6 lg:sticky lg:top-4 self-start min-w-0">
+          <div class="card p-5 border border-slate-200">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-base font-medium text-slate-900">6 months earnings</h3>
+              <a href="#" class="text-sm text-olive-600 hover:underline">View all</a>
+            </div>
+            <div class="h-[180px]">
+              <canvas id="six-months-earnings" class="max-w-full"></canvas>
+            </div>
+          </div>
+
+          <div class="card p-5 border border-slate-200">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-base font-medium text-slate-900">Strategies</h3>
+              <a href="/strategies.html" class="text-sm text-olive-600 hover:underline">Browse</a>
+            </div>
+            <label class="block text-xs text-slate-500 mb-1.5" for="strat-select">Select strategy</label>
+            <select id="strat-select" class="h-9 w-full rounded-lg border border-slate-200 px-3 text-sm">
+              <option>Loading…</option>
+            </select>
+            <div id="strat-meta" class="text-xs text-slate-500 mt-3">—</div>
+            <div id="strat-empty" class="text-xs text-slate-400 mt-2 hidden">Invest in a strategy</div>
+          </div>
+
+
+          <div class="card p-5 border border-slate-200">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-base font-medium text-slate-900">Asset class allocation</h3>
+              <span class="text-xs text-slate-500">Total = 100%</span>
+            </div>
+            <div class="space-y-4" id="asset-allocation"></div>
+          </div>
+        </aside>
+
+        <section class="col-span-12 lg:col-span-9 min-w-0">
+          <div class="card p-6 rounded-2xl border border-slate-200">
+            <h3 class="text-lg font-medium text-slate-900 mb-5">Performance Summary</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+              <div class="ps-tile"><div class="ps-label">Best Day</div><div id="ps-best" class="ps-value text-slate-800">—</div></div>
+              <div class="ps-tile"><div class="ps-label">Worst Day</div><div id="ps-worst" class="ps-value text-slate-800">—</div></div>
+              <div class="ps-tile"><div class="ps-label">Avg Daily Return</div><div id="ps-avg" class="ps-value text-slate-800">—</div></div>
+              <div class="ps-tile"><div class="ps-label">Positive Days</div><div id="ps-pos" class="ps-value text-slate-800">—</div></div>
+              <div class="ps-tile"><div class="ps-label">Trading Days</div><div id="ps-days" class="ps-value text-slate-800">—</div></div>
+              <div class="ps-tile"><div class="ps-label">CAGR (sim.)</div><div id="ps-cagr" class="ps-value text-slate-800">—</div></div>
+
+            </div>
+          </div>
+        </section>
+
+        <section class="col-span-12 lg:col-span-9 min-w-0">
+          <div class="card p-6 rounded-2xl border border-slate-200">
+            <div class="flex items-center justify-between mb-5">
+              <h3 class="text-lg font-medium text-slate-900">Current holdings</h3>
+              <div class="flex gap-2">
+                <button id="hold-prev"
+                  class="h-9 w-9 rounded-lg border border-slate-200 grid place-items-center hover:bg-slate-50"
+                  aria-label="Previous">
+                  <i class="fa-solid fa-chevron-left text-slate-500"></i>
+                </button>
+                <button id="hold-next"
+                  class="h-9 w-9 rounded-lg border border-slate-200 grid place-items-center hover:bg-slate-50"
+                  aria-label="Next">
+                  <i class="fa-solid fa-chevron-right text-slate-500"></i>
+                </button>
+              </div>
+            </div>
+            <div id="hold-track" class="flex gap-4 overflow-x-auto no-scrollbar snap-x"></div>
+          </div>
+        </section>
+
+        <section class="col-span-12 lg:col-span-9 min-w-0">
+          <div class="card rounded-2xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium text-slate-900">Top Positions</h3>
+              <a href="#" class="text-sm text-slate-500 hover:text-slate-700">View All</a>
+            </div>
+            <div class="mt-4 flex flex-wrap items-center gap-3">
+              <label class="text-sm text-slate-500">Asset Class</label>
+              <select class="h-9 rounded-lg border border-slate-200 px-3 text-sm">
+                <option>All</option>
+                <option>Stocks</option>
+                <option>Crypto</option>
+                <option>ETFs</option>
+              </select>
+              <label class="ml-2 text-sm text-slate-500">Side</label>
+              <select class="h-9 rounded-lg border border-slate-200 px-3 text-sm">
+                <option>All</option>
+                <option>Buy</option>
+                <option>Sell</option>
+              </select>
+            </div>
+
+            <div class="mt-4 overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-slate-500">
+                    <th class="py-3 text-left font-normal">Asset</th>
+                    <th class="py-3 text-left font-normal">Price</th>
+                    <th class="py-3 text-left font-normal">Qty</th>
+                    <th class="py-3 text-left font-normal">Market Value</th>
+                    <th class="py-3 text-left font-normal">Total P/L ($)</th>
+                    <th class="py-3 text-center font-normal"> </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-3"><a class="text-slate-800 hover:underline" href="#">AAPL</a></td>
+                    <td class="py-3">$255.46</td>
+                    <td class="py-3">399</td>
+                    <td class="py-3">$101,928.54</td>
+                    <td class="py-3 text-green-600">+$1,121.19</td>
+                    <td class="py-3 text-center"></td>
+                  </tr>
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-3"><a class="text-slate-800 hover:underline" href="#">NVDA</a></td>
+                    <td class="py-3">$178.19</td>
+                    <td class="py-3">301</td>
+                    <td class="py-3">$53,635.19</td>
+                    <td class="py-3 text-red-600">-$343.50</td>
+                    <td classs="py-3 text-center"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <section class="col-span-12 lg:col-span-9 min-w-0">
+          <div class="card rounded-2xl border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium text-slate-900">Recent Orders</h3>
+              <a href="#" class="text-sm text-slate-500 hover:text-slate-700">View All</a>
+            </div>
+
+            <div class="mt-4 flex flex-wrap items-center gap-3">
+              <div class="relative">
+                <input class="h-9 w-64 rounded-lg border border-slate-200 pl-9 pr-3 text-sm" placeholder="Search..." />
+                <i
+                  class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+              </div>
+              <button id="cancel-selected"
+                class="h-9 rounded-lg bg-amber-100 text-amber-900 px-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled>
+                Cancel <span id="sel-count">0</span> selected
+              </button>
+              <button class="h-9 rounded-lg border border-slate-200 px-3 text-sm">
+                <i class="fa-solid fa-table-cells-large mr-2 text-slate-500"></i> Columns
+              </button>
+            </div>
+
+            <div class="mt-3 text-xs text-slate-400" id="clear-selection" hidden>Clear Selection</div>
+
+            <div class="mt-2 overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-slate-500">
+                    <th class="py-3 pl-3"><input id="chk-all" type="checkbox"
+                        class="h-4 w-4 rounded border-slate-300" /></th>
+                    <th class="py-3 text-left font-normal">Asset</th>
+                    <th class="py-3 text-left font-normal">Order Type</th>
+                    <th class="py-3 text-left font-normal">Side</th>
+                    <th class="py-3 text-left font-normal">Qty</th>
+                    <th class="py-3 text-left font-normal">Filled Qty</th>
+                    <th class="py-3 text-left font-normal">Avg. Fill Price</th>
+                    <th class="py-3 text-left font-normal">Status</th>
+                    <th class="py-3 text-left font-normal">Source</th>
+                    <th class="py-3 text-left font-normal">Submitted At</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-3 pl-3"><input type="checkbox" class="row-chk h-4 w-4 rounded border-slate-300" />
+                    </td>
+                    <td class="py-3"><a class="text-slate-800 hover:underline" href="#">AAPL</a></td>
+                    <td class="py-3">Market</td>
+                    <td class="py-3">sell</td>
+                    <td class="py-3">1.00</td>
+                    <td class="py-3">1.00</td>
+                    <td class="py-3">254.81</td>
+                    <td class="py-3">filled</td>
+                    <td class="py-3">-</td>
+                    <td class="py-3">Sep 26, 2025, 10:34</td>
+                  </tr>
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-3 pl-3"><input type="checkbox" class="row-chk h-4 w-4 rounded border-slate-300" />
+                    </td>
+                    <td class="py-3"><a class="text-slate-800 hover:underline" href="#">AAPL</a></td>
+                    <td class="py-3">Market</td>
+                    <td class="py-3">buy</td>
+                    <td class="py-3">300.00</td>
+                    <td class="py-3">300.00</td>
+                    <td class="py-3">252.66</td>
+                    <td class="py-3">filled</td>
+                    <td class="py-3">-</td>
+                    <td class="py-3">Sep 25, 2025, 09:02</td>
+                  </tr>
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-3 pl-3"><input type="checkbox" class="row-chk h-4 w-4 rounded border-slate-300" />
+                    </td>
+                    <td class="py-3"><a class="text-slate-800 hover:underline" href="#">NVDA</a></td>
+                    <td class="py-3">Market</td>
+                    <td class="py-3">buy</td>
+                    <td class="py-3">300.00</td>
+                    <td class="py-3">300.00</td>
+                    <td class="py-3">179.33</td>
+                    <td class="py-3">filled</td>
+                    <td class="py-3">-</td>
+                    <td class="py-3">Sep 25, 2025, 08:41</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <style>
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none
+          }
+
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none
+          }
+        </style>
+      </div>
+
+      <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" nonce="ALGOHIVE"></script>
+      <script nonce="ALGOHIVE">
+        // Holdings + Allocation demo
+        (() => {
+          const holdings = [         
+          ];
+          const track = document.getElementById('hold-track');
+          const fmt = v => `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          const chip = p => `<span class="px-2.5 py-1 rounded-full text-xs font-normal ${p >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${p >= 0 ? '↑' : '↓'} ${Math.abs(p).toFixed(2)}%</span>`;
+          const logo = (t, bg) => `<div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-normal" style="background:${bg}">${t[0]}</div>`;
+          track.innerHTML = holdings.map(h => `
+            <article class="min-w-[280px] max-w-[280px] snap-start bg-white border border-slate-200 rounded-2xl p-5 flex justify-between items-center">
+              <div class="flex items-center gap-3">
+                ${logo(h.ticker, h.bg)}
+                <div>
+                  <div class="text-sm font-normal text-slate-900">${h.ticker}</div>
+                  <div class="text-xs text-slate-500">${h.name}</div>
+                </div>
+              </div>
+              <div class="text-right">
+                <div class="text-lg font-normal text-slate-900">${fmt(h.price)}</div>
+                <div class="mt-2">${chip(h.pct)}</div>
+              </div>
+            </article>
+          `).join('');
+          const CARD_W = 284;
+          document.getElementById('hold-prev').onclick = () => track.scrollBy({ left: -CARD_W, behavior: 'smooth' });
+          document.getElementById('hold-next').onclick = () => track.scrollBy({ left: CARD_W, behavior: 'smooth' });
+
+          const alloc = [{ label: 'Stocks', pct: 56, color: '#111827' }, { label: 'ETFs', pct: 22, color: '#2563eb' }, { label: 'Crypto', pct: 17, color: '#16a34a' }, { label: 'Cash', pct: 5, color: '#f59e0b' }];
+          const allocWrap = document.getElementById('asset-allocation');
+          const row = i => `
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <span class="text-sm text-slate-700">${i.label}</span>
+                <span class="text-sm font-medium text-slate-900">${i.pct}%</span>
+              </div>
+              <div class="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div class="h-full rounded-full" style="width:${i.pct}%; background:${i.color}"></div>
+              </div>
+            </div>`;
+          allocWrap.innerHTML = alloc.map(row).join('');
+        })();
+      </script>
+
+      <script nonce="ALGOHIVE">
+        // Six months earnings chart
+        (() => {
+          const ctx = document.getElementById('six-months-earnings').getContext('2d');
+          const allMonths = [{ m: 'Jul', v: 480 }, { m: 'Aug', v: 440 }, { m: 'Sep', v: 590 }, { m: 'Oct', v: 530 }, { m: 'Nov', v: 610 }, { m: 'Dec', v: 700 }];
+          const labels = allMonths.map(x => x.m), data = allMonths.map(x => x.v);
+          const OLIVE = '#556B2F', MUTED = 'rgba(2,6,23,.08)', MUTED_BORDER = 'rgba(2,6,23,.18)';
+          const fmtUSD = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+
+          new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: [{ data, backgroundColor: data.map((_, i) => i === data.length - 1 ? OLIVE : MUTED), borderColor: data.map((_, i) => i === data.length - 1 ? OLIVE : MUTED_BORDER), borderWidth: 1, borderRadius: 6, barThickness: 16, hoverBackgroundColor: data.map((_, i) => i === data.length - 1 ? OLIVE : MUTED) }] },
+            options: {
+              responsive: true, maintainAspectRatio: false,
+              plugins: { legend: { display: false }, tooltip: { displayColors: false, callbacks: { label: (c) => fmtUSD.format(c.raw) } } },
+              scales: {
+                x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11, weight: '400' }, maxRotation: 0, minRotation: 0, autoSkip: false } },
+                y: { beginAtZero: true, grid: { color: 'rgba(148,163,184,.18)', borderDash: [4, 4] }, ticks: { color: '#94a3b8', font: { size: 11, weight: '400' }, maxTicksLimit: 6, callback: v => fmtUSD.format(v) } }
+              }
+            }
+          });
+        })();
+
+        // Recent Orders selection logic
+        (function () {
+          const all = document.getElementById('chk-all');
+          const rows = () => Array.from(document.querySelectorAll('.row-chk'));
+          const sel = document.getElementById('sel-count');
+          const btn = document.getElementById('cancel-selected');
+          const clear = document.getElementById('clear-selection');
+
+          function refresh() {
+            const n = rows().filter(c => c.checked).length;
+            sel.textContent = n; btn.disabled = n === 0; clear.hidden = n === 0;
+            if (all) {
+              const total = rows().length;
+              all.checked = (n > 0 && n === total);
+              all.indeterminate = (n > 0 && n < total);
+            }
+          }
+          all?.addEventListener('change', () => { rows().forEach(c => c.checked = all.checked); refresh(); });
+          document.addEventListener('change', e => { if (e.target.classList?.contains('row-chk')) refresh(); });
+          clear?.addEventListener('click', () => { rows().forEach(c => c.checked = false); if (all) { all.checked = false; all.indeterminate = false; } refresh(); });
+          btn?.addEventListener('click', () => { if (!btn.disabled && confirm('Cancel selected orders?')) { rows().forEach(c => c.checked = false); if (all) { all.checked = false; all.indeterminate = false; } refresh(); } });
+          refresh();
+        })();
+      </script>
+    </main>
+  </div>
+
+  <div id="profile-modal" class="fixed inset-0 z-[100] hidden">
+    <div class="absolute inset-0 bg-black/40"></div>
+    <div class="absolute right-6 top-20 w-64 rounded-2xl bg-white shadow-xl border border-slate-200 overflow-hidden">
+      <div class="px-4 py-3 border-b border-slate-200">
+        <div class="text-sm font-semibold text-slate-900">Account</div>
+        <div id="pm-email" class="text-xs text-slate-500 truncate">—</div>
+      </div>
+      <div class="p-2">
+        <a id="pm-profile" href="/settings.html#basic"
+          class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50">
+          <i class="fa-regular fa-user text-slate-500 w-4"></i>
+          <span>Profile settings</span>
+        </a>
+        <button id="pm-logout"
+          class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 text-rose-700">
+          <i class="fa-solid fa-right-from-bracket w-4"></i>
+          <span>Log out</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="session-timeout-modal" class="fixed inset-0 z-[600] hidden p-6 grid place-items-center backdrop-blur-lg bg-black/40">
+    <div class="relative w-full max-w-md rounded-2xl border border-slate-300 bg-white p-8 shadow-2xl text-center">
+      <h2 class="text-xl font-semibold text-slate-900">Are you still there?</h2>
+      <p class="text-slate-600 mt-2">
+        You've been inactive for a while. You will be automatically logged out in
+        <span id="session-countdown" class="font-bold">60</span> seconds for security.
+      </p>
+      <button
+        id="session-stay-btn"
+        class="mt-6 inline-flex h-10 px-6 rounded-lg items-center justify-center font-medium
+               bg-[var(--olive)] text-white hover:bg-opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--olive)]/40"
+      >
+        I'm still here
+      </button>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js" defer></script>
+
+  <script>
+    (function () {
+      const btn = document.getElementById('ah-mobile-menu-btn');
+      const overlay = document.getElementById('ah-overlay');
+      const sidebar = document.getElementById('ah-sidebar');
+
+      function openMenu() {
+        sidebar.classList.add('is-open');
+        overlay.classList.remove('hidden');
+      }
+      function closeMenu() {
+        sidebar.classList.remove('is-open');
+        overlay.classList.add('hidden');
+      }
+
+      btn?.addEventListener('click', openMenu);
+      overlay?.addEventListener('click', closeMenu);
+      
+      sidebar?.querySelectorAll('nav a, nav details a').forEach(link => {
+          link.addEventListener('click', closeMenu);
+      });
+    })();
+  </script>
+
+  <script nonce="ALGOHIVE">
+    (function () {
+      const layout = document.getElementById('layout');
+      const aside = document.getElementById('ah-sidebar');
+      const btn = document.getElementById('ah-collapse');
+      const saved = localStorage.getItem('ah_collapsed') === 'true';
+      if (saved) { aside.setAttribute('data-collapsed', 'true'); layout.classList.add('is-collapsed'); }
+      btn.addEventListener('click', () => {
+        const isCollapsed = aside.getAttribute('data-collapsed') === 'true';
+        if (!isCollapsed) aside.querySelectorAll('details[open]').forEach(d => d.removeAttribute('open'));
+        aside.setAttribute('data-collapsed', String(!isCollapsed));
+        layout.classList.toggle('is-collapsed', !isCollapsed);
+        localStorage.setItem('ah_collapsed', String(!isCollapsed));
+        layout.offsetHeight; window.dispatchEvent(new Event('resize'));
+      });
+    })();
+  </script>
+
+<script type="module" nonce="ALGOHIVE">
+  import { supabase } from "/js/supabase.js";
+
+  // ---------------- helpers: dom + overlay ----------------
+  const $ = (q, el = document) => el.querySelector(q);
+  const symFor = (ccy) => (ccy === "USD" ? "$" : "R");
+  const fmtMoney = (sym, v) =>
+    `${sym} ${Number(v || 0).toLocaleString("en-ZA", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  const maskId = (uuid) => (uuid ? `••• ${String(uuid).slice(-4)}` : "—");
+
+  // -------- profile gating helpers --------
+  const REQUIRED_PROFILE_FIELDS = [
+    "first_name",
+    "last_name",
+    "phone",
+    "dob",
+    "id_number",
+    "nationality",
+    "country_residence",
+    "employment_status",
+    "occupation",
+    "employer",
+    "income_bracket",
+    "source_of_funds",
+    "net_worth_range",
+    "experience_level",
+    "risk_tolerance",
+    "objectives",
+  ];
+
+  const hasValue = (value) => String(value ?? "").trim().length > 0;
+  const computeProfileComplete = (row) =>
+    REQUIRED_PROFILE_FIELDS.every((key) => hasValue(row?.[key]));
+
+  async function ensureProfile(userId, email) {
+    let { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .maybeSingle();
+    if (error && error.code !== "PGRST116") throw error;
+    if (data) return data;
+    const up = await supabase
+      .from("profiles")
+      .upsert(
+        { id: userId, email, updated_at: new Date().toISOString() },
+        { onConflict: "id" }
+      )
+      .select("*")
+      .single();
+    if (up.error) throw up.error;
+    return up.data;
+  }
+
+  function resolveKycBoolean(row) {
+    const v = row?.kyc_status;
+    if (typeof v === "boolean") return v;
+    if (typeof v === "string")
+      return ["verified", "approved", "done", "passed", "kyc_done"].includes(
+        v.toLowerCase()
+      );
+    return false;
+  }
+
+  function gateBannerMessage(profileComplete, kycDone) {
+    if (!profileComplete && !kycDone)
+      return "Please finish Additional Info and complete KYC first.";
+    if (!profileComplete) return "Please finish Additional Info first.";
+    if (!kycDone) return "Please complete KYC first.";
+    return "";
+  }
+
+  function toggleEmptyOverlay(show) {
+    const el = document.getElementById("empty-overlay");
+    if (!el) return;
+    el.classList.toggle("hidden", !show);
+    document.body.classList.toggle("overflow-hidden", show);
+  }
+
+  function showEmptyStateAll() {
+    toggleEmptyOverlay(true);
+
+    // clear earnings bar chart area (if it was drawn)
+    const earnCanvas = document.getElementById("six-months-earnings");
+    if (earnCanvas) {
+      const ctx = earnCanvas.getContext("2d");
+      ctx.clearRect(0, 0, earnCanvas.width, earnCanvas.height);
+    }
+
+    // clear holdings carousel
+    const holdTrack = document.getElementById("hold-track");
+    if (holdTrack) holdTrack.innerHTML = "";
+
+    // clear asset allocation bars
+    const allocWrap = document.getElementById("asset-allocation");
+    if (allocWrap) allocWrap.innerHTML = "";
+
+    // clear performance summary numbers
+    ["ps-best", "ps-worst", "ps-avg", "ps-pos", "ps-days", "ps-cagr"].forEach(
+      (id) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = "—";
+      }
+    );
+
+    // clear positions table body (the demo table)
+    document.querySelectorAll("tbody.divide-y").forEach((tb) => (tb.innerHTML = ""));
+
+    // Strategies card: hide selector and show empty hint
+    const stratSel = $("#strat-select");
+    const stratMeta = $("#strat-meta");
+    const stratEmpty = $("#strat-empty");
+    const stratLbl = document.querySelector('label[for="strat-select"]');
+
+    if (stratSel) {
+      stratSel.innerHTML = "<option>—</option>";
+      stratSel.disabled = true;
+      stratSel.classList.add("hidden");
+    }
+    stratLbl?.classList.add("hidden");
+    if (stratMeta) stratMeta.textContent = "—";
+    if (stratEmpty) {
+      stratEmpty.classList.remove("hidden");
+      stratEmpty.innerHTML =
+        `Invest in a strategy to see your allocation here.
+         <a class="ml-1 text-olive-600 hover:underline" href="/strategies">Browse strategies</a>`;
+    }
+  }
+
+  // ---------------- state ----------------
+  let currentAccount = null;
+  let holdings = []; // [{strategy_id, units, last_ts, currency, account_id}]
+  const metaByStrategy = new Map(); // strategies meta
+  const priceByStrategy = new Map(); // latest nav
+
+  // portfolio header + chart els
+  let chart = null, elUpdated = null, elVal = null, elChg = null, refreshBtn = null;
+
+  // ---------------- auth guard (avoid loops) ----------------
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT") {
+      const next = encodeURIComponent(location.pathname + location.search + location.hash);
+      location.replace(`/auth?tab=in&redirect=${next}`);
+    }
+  });
+
+  // ---------------- header (name + avatar) ----------------
+  async function setHeaderNameAndAvatar(user) {
+    let profile = null;
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, first_name, last_name, avatar_url")
+        .eq("id", user.id)
+        .single();
+      if (!error) profile = data || null;
+    } catch {}
+
+    const bestName =
+      [
+        profile?.full_name,
+        [profile?.first_name, profile?.last_name].filter(Boolean).join(" "),
+        user?.user_metadata?.full_name,
+        [user?.user_metadata?.first_name, user?.user_metadata?.last_name]
+          .filter(Boolean)
+          .join(" "),
+        user?.user_metadata?.name,
+      ].find((s) => s && String(s).trim()) || "—";
+
+    const hdrName = $("#hdr-name");
+    if (hdrName) hdrName.textContent = bestName;
+
+    const pmLabel = $("#pm-email");
+    if (pmLabel) pmLabel.textContent = bestName;
+
+    const hdrImg = $("#hdr-avatar");
+    const avatarUrl = profile?.avatar_url || user?.user_metadata?.avatar_url;
+    if (hdrImg) {
+      if (avatarUrl) {
+        hdrImg.src = avatarUrl;
+      } else {
+        const initial = (bestName.match(/[A-Za-z]/)?.[0] || "?").toUpperCase();
+        const svg = encodeURIComponent(
+          `<svg xmlns='http://www.w3.org/2000/svg' width='72' height='72'>
+             <rect width='100%' height='100%' rx='8' ry='8' fill='#111827'/>
+             <text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle'
+                   font-family='Inter, Arial, sans-serif' font-size='36' fill='#fff'>${initial}</text>
+           </svg>`
+        );
+        hdrImg.src = `data:image/svg+xml;utf8,${svg}`;
+      }
+    }
+  }
+
+  function wireProfileMenu() {
+    const pm = $("#profile-modal");
+    const btn = $("#hdr-profile-btn");
+    const logoutBtn = $("#pm-logout");
+    btn?.addEventListener("click", () => pm?.classList.toggle("hidden"));
+    pm?.addEventListener("click", (e) => {
+      if (e.target === pm) pm.classList.add("hidden");
+    });
+    logoutBtn?.addEventListener("click", async () => {
+      await supabase.auth.signOut();
+    });
+  }
+
+  // ---------------- data loaders ----------------
+  async function pickActiveAccount(user) {
+    const { data, error } = await supabase
+      .from("investment_accounts")
+      .select("id,status,currency,equity,balance,updated_at")
+      .eq("profile_id", user.id)
+      .order("status", { ascending: true })
+      .order("updated_at", { ascending: false });
+
+    if (error) throw error;
+    currentAccount = data?.find((a) => a.status === "ACTIVE") || data?.[0] || null;
+
+    const badge = $("#sidebar-acc");
+    if (badge) {
+      badge.textContent = maskId(currentAccount?.id);
+      badge.title = currentAccount?.id || "";
+    }
+  }
+
+  async function loadHoldingsFromUnitLedger() {
+    if (!currentAccount) {
+      holdings = [];
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("unit_ledger")
+      .select("strategy_id, units, ts, account_id")
+      .eq("account_id", currentAccount.id);
+
+    if (error) throw error;
+
+    // reduce per strategy_id (client-side aggregate)
+    const map = new Map();
+    (data || []).forEach((r) => {
+      const k = r.strategy_id;
+      const prev = map.get(k) || { units: 0, last_ts: null };
+      const units = Number(prev.units) + Number(r.units || 0);
+      const last_ts =
+        !prev.last_ts || (r.ts && new Date(r.ts) > new Date(prev.last_ts))
+          ? r.ts
+          : prev.last_ts;
+      map.set(k, { units, last_ts, account_id: r.account_id });
+    });
+
+    holdings = Array.from(map.entries())
+      .map(([strategy_id, v]) => ({
+        strategy_id,
+        units: Number(v.units || 0),
+        last_ts: v.last_ts || null,
+        account_id: v.account_id || currentAccount.id,
+        currency: currentAccount?.currency || "USD",
+      }))
+      .filter((h) => h.units > 0); // only positive net positions
+  }
+
+  async function hydrateStrategyMeta() {
+    const ids = [...new Set(holdings.map((h) => h.strategy_id))];
+    if (!ids.length) return;
+    const { data, error } = await supabase
+      .from("strategies")
+      .select("id,name,symbol,currency")
+      .in("id", ids);
+    if (!error) data?.forEach((r) => metaByStrategy.set(r.id, r));
+    holdings.forEach((h) => {
+      const m = metaByStrategy.get(h.strategy_id);
+      if (m?.currency) h.currency = m.currency;
+    });
+  }
+
+  async function hydrateLatestPrices() {
+    const ids = [...new Set(holdings.map((h) => h.strategy_id))];
+    if (!ids.length) return;
+    const { data, error } = await supabase
+      .from("v_strategy_latest_price")
+      .select("strategy_id, nav, price, updated_at")
+      .in("strategy_id", ids);
+    if (!error)
+      data?.forEach((r) => {
+        const nav = Number(r.nav ?? r.price ?? 0);
+        priceByStrategy.set(r.strategy_id, { nav, updated_at: r.updated_at });
+      });
+  }
+
+  // ---------------- UI (strategies card + chart) ----------------
+  function labelStrategy(id) {
+    const m = metaByStrategy.get(id) || {};
+    if (m.symbol && m.name) return `${m.name} • ${m.symbol}`;
+    return m.name || m.symbol || `Strategy ${String(id).slice(0, 6)}…`;
+  }
+
+
+
+  function equityOf(h) {
+    const p = priceByStrategy.get(h.strategy_id);
+    const nav = Number(p?.nav || 0);
+    const eq = Number(h.units || 0) * nav;
+    const ts = p?.updated_at || h.last_ts || null;
+    return { nav, equity: eq, ts };
+  }
+
+  function updateStrategyMeta(h) {
+    const stratMeta = $("#strat-meta");
+    const { nav, equity, ts } = equityOf(h);
+    const ccy = metaByStrategy.get(h.strategy_id)?.currency || h.currency || "USD";
+    if (stratMeta) {
+      stratMeta.innerHTML = `
+        <div class="flex items-center justify-between">
+          <span>${ccy} · Units ${Number(h.units).toLocaleString("en-ZA")} · Acct ${maskId(
+        h.account_id
+      )}</span>
+          <span class="font-medium text-slate-900">${fmtMoney(symFor(ccy), equity)}</span>
+        </div>
+        <div class="text-[11px] text-slate-400 mt-0.5">
+          Last NAV ${fmtMoney(symFor(ccy), nav)}${
+        ts
+          ? ` · ${new Date(ts).toLocaleString("en-ZA", {
+              month: "short",
+              day: "2-digit",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}`
+          : ""
+      }
+        </div>
+      `;
+    }
+  }
+
+  function wireStrategiesCard() {
+    const stratSel = $("#strat-select");
+    const stratLbl = document.querySelector('label[for="strat-select"]');
+    const stratEmpty = $("#strat-empty");
+
+    stratSel?.classList.remove("hidden");
+    stratLbl?.classList.remove("hidden");
+    stratEmpty?.classList.add("hidden");
+
+    if (stratSel) {
+      stratSel.disabled = false;
+      stratSel.innerHTML = holdings
+        .map(
+          (h) => `<option value="${String(h.strategy_id)}">${labelStrategy(h.strategy_id)}</option>`
+        )
+        .join("");
+
+      const first = holdings[0];
+      updateStrategyMeta(first);
+      stratSel.value = String(first.strategy_id);
+      stratSel.addEventListener("change", () => {
+        const chosen =
+          holdings.find((h) => String(h.strategy_id) === String(stratSel.value)) || first;
+        updateStrategyMeta(chosen);
+        renderFromSelection();
+      });
+    }
+  }
+
+  function setupChart() {
+    elUpdated = $("#pf-updated");
+    elVal = $("#pf-value");
+    elChg = $("#pf-change");
+    refreshBtn = $("#pf-refresh");
+
+    const ctxEl = document.getElementById("pf-chart");
+    if (!ctxEl) return;
+    const ctx = ctxEl.getContext("2d");
+    const gradient = ctx.createLinearGradient(0, 0, 0, 260);
+    gradient.addColorStop(0, "rgba(85,107,47,0.35)");
+    gradient.addColorStop(1, "rgba(85,107,47,0.06)");
+
+    chart = new window.Chart(ctx, {
+      type: "line",
+      data: {
+        labels: [],
+        datasets: [
+          {
+            data: [],
+            tension: 0.35,
+            borderWidth: 2,
+            borderColor: "#556B2F",
+            backgroundColor: gradient,
+            fill: true,
+            pointRadius: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: true, displayColors: false } },
+        scales: { x: { display: false }, y: { display: true, ticks: { color: "#94a3b8", maxTicksLimit: 3 } } },
+      },
+    });
+
+    document.querySelectorAll("#portfolio-card .tab")
+      .forEach((btn) => btn.addEventListener("click", () => renderFromSelection()));
+
+    refreshBtn?.addEventListener("click", () => {
+      refreshBtn.classList.add("spin");
+      setTimeout(() => {
+        refreshBtn.classList.remove("spin");
+        renderFromSelection();
+      }, 600);
+    });
+  }
+
+  function renderFlatEquity(equityValue, ts) {
+    if (!chart) return;
+    const N = 30;
+    chart.data.labels = Array.from({ length: N }, (_, i) => String(i + 1));
+    chart.data.datasets[0].data = Array.from({ length: N }, () => Number(equityValue || 0));
+    chart.update();
+
+    const sym = symFor(currentAccount?.currency || "USD");
+    if (elVal) elVal.textContent = fmtMoney(sym, equityValue || 0);
+    if (elChg) {
+      elChg.textContent = "+0.00%";
+      elChg.style.color = "#16a34a";
+    }
+    if (elUpdated)
+      elUpdated.textContent = `${new Date(ts || Date.now()).toLocaleString("en-ZA", {
+        month: "long",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })} SAST`;
+  }
+
+  function renderFromSelection() {
+    if (!holdings.length) {
+      renderFlatEquity(0, null);
+      return;
+    }
+    const stratSel = $("#strat-select");
+    const sel =
+      holdings.find((h) => String(h.strategy_id) === String(stratSel?.value)) || holdings[0];
+    const { equity, ts } = equityOf(sel);
+    renderFlatEquity(equity, ts);
+  }
+
+  // ---------------- boot ----------------
+  (async function main() {
+    // require session
+    const { data: sessionWrap } = await supabase.auth.getSession();
+    if (!sessionWrap?.session) {
+      const next = encodeURIComponent(location.pathname + location.search + location.hash);
+      location.replace(`/auth?tab=in&redirect=${next}`);
+      return;
+    }
+    const { data: userWrap } = await supabase.auth.getUser();
+    const user = userWrap?.user;
+    if (!user) {
+      const next = encodeURIComponent(location.pathname + location.search + location.hash);
+      location.replace(`/auth?tab=in&redirect=${next}`);
+      return;
+    }
+
+    let profileRow = null;
+    try {
+      profileRow = await ensureProfile(user.id, user.email || null);
+    } catch (err) {
+      console.error("Profile ensure failed", err);
+    }
+
+    // === [THIS IS THE REDIRECT LOGIC YOU ASKED ABOUT] ===
+    const profileComplete = computeProfileComplete(profileRow || {});
+    const kycDone = resolveKycBoolean(profileRow || {});
+    if (!profileComplete || !kycDone) {
+      const targetHash = !profileComplete ? "#extra" : "#docs";
+      const message = gateBannerMessage(profileComplete, kycDone);
+      try {
+        if (message) sessionStorage.setItem("ah_gate_reason", message);
+      } catch (err) {
+        console.warn("Could not persist gate banner", err);
+      }
+      location.replace(`/settings.html${targetHash}`);
+      return;
+    }
+    // === [END OF REDIRECT LOGIC] ===
+
+    await setHeaderNameAndAvatar(user);
+    wireProfileMenu();
+
+    // === [NEW] SESSION TIMEOUT LOGIC ===
+    function setupSessionTimeout() {
+      const TIMEOUT_MINUTES = 10;
+      const WARNING_SECONDS = 60;
+      
+      let inactivityTimer;
+      let warningTimer;
+      let countdownInterval;
+
+      const modal = document.getElementById('session-timeout-modal');
+      const countdownEl = document.getElementById('session-countdown');
+      const stayBtn = document.getElementById('session-stay-btn');
+
+      if (!modal || !countdownEl || !stayBtn) {
+        console.warn('Session timeout modal elements not found. Timeout disabled.');
+        return;
+      }
+
+      const logoutUser = () => {
+        // This will trigger the 'SIGNED_OUT' event in onAuthStateChange
+        supabase.auth.signOut();
+      };
+
+      const showWarning = () => {
+        modal.classList.remove('hidden');
+        let remaining = WARNING_SECONDS;
+        countdownEl.textContent = remaining;
+
+        countdownInterval = setInterval(() => {
+          remaining--;
+          countdownEl.textContent = remaining;
+          if (remaining <= 0) {
+            clearInterval(countdownInterval);
+          }
+        }, 1000);
+
+        warningTimer = setTimeout(logoutUser, WARNING_SECONDS * 1000);
+      };
+
+      const resetTimer = () => {
+        clearTimeout(inactivityTimer);
+        clearTimeout(warningTimer);
+        clearInterval(countdownInterval);
+        modal.classList.add('hidden');
+        
+        // Set to 10 minutes (10 * 60 * 1000)
+        inactivityTimer = setTimeout(showWarning, TIMEOUT_MINUTES * 60 * 1000); 
+      };
+
+      const userActivityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+      userActivityEvents.forEach(event => {
+        window.addEventListener(event, resetTimer, true);
+      });
+
+      stayBtn.addEventListener('click', resetTimer);
+
+      // Initial start
+      resetTimer();
+    }
+
+    setupSessionTimeout();
+    // === END SESSION TIMEOUT LOGIC ===
+
+    // quick existence test – uses your RPC: has_units(uid uuid) returns boolean
+    let hasAny = false;
+    try {
+      const { data, error } = await supabase.rpc("has_units", { uid: user.id });
+      if (error) throw error;
+      hasAny = !!data;
+    } catch (err) {
+      // if rpc fails, we’ll fall back to checking account + ledger below
+      console.warn("has_units RPC failed, continuing:", err?.message || err);
+    }
+
+    if (hasAny === true) {
+      toggleEmptyOverlay(false);
+    } else {
+      // fallback check: see if they even have an ACTIVE account and any ledger rows
+      try {
+        await pickActiveAccount(user);
+        if (!currentAccount) {
+          showEmptyStateAll();
+          setupChart();
+          renderFlatEquity(0, null);
+          return;
+        }
+
+        const { data: rows, error: le } = await supabase
+          .from("unit_ledger")
+          .select("id")
+          .eq("account_id", currentAccount.id)
+          .limit(1);
+        if (le || !rows?.length) {
+          showEmptyStateAll();
+          setupChart();
+          renderFlatEquity(0, null);
+          return;
+        }
+      } catch {
+        showEmptyStateAll();
+        setupChart();
+        renderFlatEquity(0, null);
+        return;
+      }
+    }
+
+    // proceed normal flow
+    try {
+      await pickActiveAccount(user);
+      await loadHoldingsFromUnitLedger();
+
+      if (!holdings.length) {
+        showEmptyStateAll();
+        setupChart();
+        renderFlatEquity(0, null);
+        return;
+      }
+
+      await hydrateStrategyMeta();
+      await hydrateLatestPrices();
+
+      wireStrategiesCard();
+      setupChart();
+      renderFromSelection();
+    } catch (err) {
+      console.error(err);
+      showEmptyStateAll();
+      setupChart();
+      renderFlatEquity(0, null);
+    }
+  })();
+</script>
+
+
+
+<div id="empty-overlay" class="fixed inset-0 z-[500] hidden p-6 grid place-items-center backdrop-blur-lg bg-black/30">
+  <div class="relative w-full max-w-md rounded-2xl border border-white/15 bg-gradient-to-br from-[var(--olive)] to-green-700 text-center text-white p-8 shadow-2xl">
+    <img
+      src="https://static.wixstatic.com/media/ac771e_af06d86a7a1f4abd87e52e45f3bcbd96~mv2.png"
+      alt="AlgoHive"
+      class="h-12 mx-auto mb-5 object-contain drop-shadow-md"
+    />
+    <h2 class="text-xl font-semibold">No data yet</h2>
+    <p class="text-white/80 mt-2">
+      You don’t have any strategies or investments yet.<br>
+      Explore open strategies to start tracking your performance.
+    </p>
+    <a
+      href="/strategies"
+      class="mt-6 inline-flex h-10 px-6 rounded-lg items-center justify-center font-medium
+             bg-white/90 text-[var(--olive)] hover:bg-white focus:outline-none focus:ring-2 focus:ring-white/40"
+    >
+      Browse strategies
+    </a>
+  </div>
+</div>
+
+
+
+
+</body>
+
+</html>

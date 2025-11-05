@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Investor Onboarding | AlgoHive</title>
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com" nonce="ALGOHIVE"></script>
+
+  <!-- Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"/>
+
+  <!-- Leaflet (CSP-allowed via cdnjs) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
+
+  <style>
+    :root{
+      --ink:#0f172a; --muted:#64748b; --olive:#7e8d52; --brand:#f59e0b; --line:#e2e8f0; --panel:#ffffff; --bg:#f8fafc;
+    }
+    html,body{ background:var(--bg); color:var(--ink) }
+    .card{ background:var(--panel); border:1px solid var(--line); border-radius:16px; box-shadow:0 10px 30px rgba(2,12,27,0.06) }
+    .btn-olive{ background:var(--olive); color:#fff }
+    .btn-olive:hover{ filter:brightness(.95) }
+    .muted{ color:var(--muted) }
+    .step-dot{ width:28px; height:28px; border-radius:999px; display:grid; place-items:center; font-weight:700; border:1px solid var(--line); background:#fff; color:var(--muted) }
+    .step-dot.active{ background:var(--olive); color:#fff; border-color:var(--olive) }
+    .divider{ height:1px; background:linear-gradient(90deg, transparent, var(--line), transparent) }
+    .inp{ border:1px solid var(--line); border-radius:12px; padding:.65rem .9rem; width:100% }
+    .inp:focus{ outline:none; border-color:var(--olive); box-shadow:0 0 0 4px rgba(126,141,82,.15) }
+    .error{ border-color:#ef4444 !important }
+    .tab-btn{
+      padding:.5rem .75rem;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:#fff;
+      font-weight:600;
+      color:#64748b;
+      cursor:default;
+      user-select:none;
+    }
+    .tab-btn.active{
+      color:var(--ink);
+      border-color:var(--olive);
+      box-shadow:0 0 0 3px rgba(126,141,82,.15)
+    }
+    #map{
+      height:260px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#f1f5f9
+    }
+    .leaflet-container { min-height:260px }
+  </style>
+</head>
+<body class="min-h-screen">
+  <!-- Top -->
+  <header class="bg-white border-b border-[var(--line)]">
+    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <img class="w-8 h-8" src="https://static.wixstatic.com/shapes/ac771e_e60a2d47ce2d4afb858cb00c0e618c9e.svg" alt="AlgoHive"/>
+        <div class="font-bold">AlgoHive Investor Onboarding</div>
+      </div>
+      <div class="hidden sm:flex items-center gap-3 text-sm text-[var(--muted)]">
+        <span>Secure</span><span>•</span><span>No hidden fees</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Stepper + Tabs -->
+  <div class="max-w-6xl mx-auto px-4 mt-6">
+    <div class="card p-4">
+      <div class="flex items-center gap-2">
+        <div id="s1" class="step-dot active">1</div><div class="flex-1 h-[2px] bg-[var(--line)]"></div>
+        <div id="s2" class="step-dot">2</div><div class="flex-1 h-[2px] bg-[var(--line)]"></div>
+        <div id="s3" class="step-dot">3</div><div class="flex-1 h-[2px] bg-[var(--line)]"></div>
+        <div id="s4" class="step-dot">4</div>
+      </div>
+      <div class="mt-3 h-1 w-full bg-[var(--line)] rounded">
+        <div id="progressBar" class="h-1 rounded bg-[var(--olive)]" style="width:25%"></div>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <div id="tab1" class="tab-btn active">Intro</div>
+        <div id="tab2" class="tab-btn">Details</div>
+        <div id="tab3" class="tab-btn">Payment</div>
+        <div id="tab4" class="tab-btn">Complete</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1 -->
+  <section id="step1" class="max-w-6xl mx-auto px-4 mt-8">
+    <div class="grid lg:grid-cols-2 gap-8 items-center">
+      <div class="card p-8">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm">
+          <i class="fa-solid fa-seedling"></i> Welcome to AlgoHive
+        </div>
+        <h1 class="mt-4 text-4xl font-extrabold">Own a stake in the hive.</h1>
+        <p class="mt-2 text-lg muted">
+          Join as a shareholder and partner in our growth journey. Clean process, clear docs, bank-grade security.
+        </p>
+
+        <div class="mt-6 flex gap-3">
+          <button data-next class="btn-olive rounded-xl px-6 py-3 font-semibold">
+            Get Started <i class="fa-solid fa-arrow-right ml-2"></i>
+          </button>
+        </div>
+
+        <div class="mt-6 divider"></div>
+        <div class="mt-4 grid grid-cols-3 gap-4 text-center">
+          <div>
+            <div class="text-2xl font-bold">R0</div>
+            <div class="muted text-sm">AUM fees</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold">Bank</div>
+            <div class="muted text-sm">integrations</div>
+          </div>
+          <div>
+            <div class="text-2xl font-bold">24/7</div>
+            <div class="muted text-sm">Support</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 gap-6">
+        <div class="card p-6">
+          <div class="w-10 h-10 rounded bg-emerald-50 text-emerald-700 grid place-items-center">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div class="mt-2 font-semibold">Secure Process</div>
+          <p class="muted text-sm mt-1">Bank-grade security and controls.</p>
+        </div>
+
+        <div class="card p-6">
+          <div class="w-10 h-10 rounded bg-blue-50 text-blue-700 grid place-items-center">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+          <div class="mt-2 font-semibold">Proven</div>
+          <p class="muted text-sm mt-1">Listed strategies with track records.</p>
+        </div>
+
+        <div class="card p-6">
+          <div class="w-10 h-10 rounded bg-purple-50 text-purple-700 grid place-items-center">
+            <i class="fa-solid fa-headset"></i>
+          </div>
+          <div class="mt-2 font-semibold">Human Support</div>
+          <p class="muted text-sm mt-1">Actual people, not a maze.</p>
+        </div>
+
+        <div class="card p-6">
+          <div class="w-10 h-10 rounded bg-amber-50 text-amber-700 grid place-items-center">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <div class="mt-2 font-semibold">Transparent</div>
+          <p class="muted text-sm mt-1">Clear steps and pricing.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 2: Details -->
+  <section id="step2" class="max-w-6xl mx-auto px-4 mt-8 hidden">
+    <div class="card p-8">
+      <h2 class="text-2xl font-bold">Your Details</h2>
+      <p class="muted">
+        Minimum investment <strong>R80,000</strong>. Share price <strong>R1,000</strong> (no bonus shares).
+      </p>
+
+      <form id="detailsForm" class="mt-6 grid gap-6">
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm muted mb-1">Full name *</label>
+            <input id="fullName" class="inp" placeholder="e.g. John Smith" required/>
+            <div id="fullNameError" class="hidden text-sm text-red-600 mt-1">Please enter your full name</div>
+          </div>
+          <div>
+            <label class="block text-sm muted mb-1">Email *</label>
+            <input id="email" type="email" class="inp" placeholder="you@domain.com" required/>
+            <div id="emailError" class="hidden text-sm text-red-600 mt-1">Please enter a valid email</div>
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm muted mb-1">ID number *</label>
+            <input id="idNumber" class="inp" placeholder="e.g. 910101..." required/>
+            <div id="idError" class="hidden text-sm text-red-600 mt-1">ID required</div>
+          </div>
+          <div>
+            <label class="block text-sm muted mb-1">Cell number *</label>
+            <input id="phone" class="inp" placeholder="+27 ..." inputmode="tel" required/>
+            <div id="phoneError" class="hidden text-sm text-red-600 mt-1">Phone required</div>
+          </div>
+          <div>
+            <label class="block text-sm muted mb-1">Investment amount (ZAR) *</label>
+            <div class="flex">
+              <span class="px-3 grid place-items-center border border-[var(--line)] rounded-l-md bg-gray-50">R</span>
+              <input id="investmentAmount" type="number" min="80000" step="1000" value="80000" class="inp rounded-l-none" required/>
+            </div>
+            <div id="amountError" class="hidden text-sm text-red-600 mt-1">Minimum is R80,000</div>
+            <div class="text-xs muted mt-1">Share price: R1,000</div>
+          </div>
+        </div>
+
+        <!-- Address -->
+        <div class="grid lg:grid-cols-2 gap-6">
+          <div>
+            <label class="block text-sm muted mb-1">Search address *</label>
+            <input id="addrSearch" class="inp" placeholder="Type an address…"/>
+            <div class="text-xs muted mt-1">We’ll pin it on the map.</div>
+          </div>
+          <div>
+            <label class="block text-sm muted mb-1">Selected address</label>
+            <input id="addressText" class="inp" placeholder="—" readonly/>
+          </div>
+        </div>
+
+        <div id="map" class="mt-2"></div>
+
+        <!-- Subscription summary -->
+        <div class="card p-4 mt-6">
+          <div class="text-sm muted mb-1">Subscription summary</div>
+          <div class="text-lg font-semibold">
+            <span id="summaryShares">80</span> shares @ R1,000 per share
+          </div>
+          <div class="text-sm text-[var(--muted)] mt-1">
+            Total commitment
+            <span id="summaryAmount" class="font-bold text-[var(--ink)]">R80,000.00</span>
+            (minimum R80,000)
+          </div>
+        </div>
+
+        <!-- Subscription Agreement / DocuSeal -->
+        <div class="card p-4">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex-1">
+              <div class="font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-file-signature"></i>
+                <span>Subscription Agreement</span>
+              </div>
+              <p class="muted text-sm mt-1">
+                Please sign the Subscription document. This is required for us to issue shares.
+              </p>
+
+              <div class="mt-2 text-sm">
+                <a id="docuSealOpen"
+                   class="text-[var(--olive)] underline font-semibold"
+                   target="_blank"
+                   rel="noopener">
+                  Open &amp; Sign
+                </a>
+              </div>
+
+              <div class="mt-3 flex items-start gap-2">
+                <input id="docSigned" type="checkbox" class="w-4 h-4 rounded border-[var(--line)] mt-1">
+                <label for="docSigned" class="text-sm leading-snug">
+                  I have signed the Subscription document.
+                </label>
+              </div>
+              <div id="docSignedError" class="hidden text-sm text-red-600 mt-1">
+                Please confirm you’ve signed.
+              </div>
+            </div>
+
+            <div class="sm:w-40">
+              <button
+                id="copyDocuSealBtn"
+                type="button"
+                class="w-full rounded-xl border border-[var(--line)] px-3 py-2 text-sm font-semibold">
+                Copy link
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between mt-4">
+          <button type="button" data-prev class="rounded-xl px-5 py-2.5 border border-[var(--line)]">Back</button>
+          <button type="button" id="toPayment" class="btn-olive rounded-xl px-6 py-3 font-semibold">
+            Proceed to Payment <i class="fa-solid fa-arrow-right ml-2"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Step 3: Payment -->
+  <section id="step3" class="max-w-6xl mx-auto px-4 mt-8 hidden">
+    <div class="card p-8">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold">Bank Transfer</h2>
+          <p class="muted">Transfer the amount below and then upload your POP (PDF).</p>
+        </div>
+        <div class="text-right">
+          <div class="text-sm muted">Total Amount</div>
+          <div id="paymentTotal" class="text-2xl font-extrabold text-[var(--olive)]">R80,000.00</div>
+        </div>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-6 mt-6">
+        <div class="card p-5">
+          <div class="grid sm:grid-cols-2 gap-4">
+            <div>
+              <div class="muted text-xs mb-1">Bank</div>
+              <div class="font-semibold">Capitec Bank</div>
+            </div>
+            <div>
+              <div class="muted text-xs mb-1">Account Name</div>
+              <div class="font-semibold">AlgoHive Business Account</div>
+            </div>
+            <div>
+              <div class="muted text-xs mb-1">Account Number</div>
+              <div class="font-semibold">1053 0458 83</div>
+            </div>
+            <div>
+              <div class="muted text-xs mb-1">Branch Code</div>
+              <div class="font-semibold">470010</div>
+            </div>
+            <div class="sm:col-span-2">
+              <div class="muted text-xs mb-1">Reference</div>
+              <div class="font-semibold">
+                INV-<span id="emailRef">your@email</span>
+              </div>
+            </div>
+          </div>
+          <p class="muted text-sm mt-3">
+            Use the exact reference. EFTs usually clear in 1–2 business days.
+          </p>
+
+          <button id="downloadPdfBtn" class="mt-4 w-full btn-olive rounded-xl px-4 py-3 font-semibold">
+            <i class="fa-solid fa-download mr-2"></i> Download Confirmation PDF
+          </button>
+        </div>
+
+        <div class="card p-5">
+          <h3 class="font-semibold">Upload Proof of Payment (PDF)</h3>
+          <p class="muted text-sm">After your transfer, upload your POP here.</p>
+          <input id="popFile" type="file" accept="application/pdf" class="mt-3"/>
+          <button id="uploadPopBtn" class="mt-3 btn-olive rounded-xl px-4 py-2 font-semibold">Upload POP</button>
+          <div id="popMsg" class="mt-2 text-sm"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between mt-6">
+        <button type="button" data-prev class="rounded-xl px-5 py-2.5 border border-[var(--line)]">Back</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Step 4: Complete -->
+  <section id="step4" class="max-w-6xl mx-auto px-4 mt-8 hidden">
+    <div class="card p-10 text-center" id="completeCard">
+      <div class="w-24 h-24 rounded-full mx-auto grid place-items-center bg-emerald-100">
+        <i class="fa-solid fa-check text-4xl text-emerald-700"></i>
+      </div>
+      <h2 class="mt-6 text-3xl font-extrabold">Thank you. Your application was received.</h2>
+      <p class="mt-2 muted">
+        We’ve received your details and proof of payment. Our team will contact you to finalise your subscription and activate your account.
+      </p>
+      <div class="mt-8">
+        <a href="/index.html" class="btn-olive inline-flex rounded-xl px-6 py-3 font-semibold">Go to Home</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Supabase + App Logic -->
+  <script type="module" nonce="ALGOHIVE">
+    // ======= Supabase init =======
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.46.1/+esm";
+    const SUPABASE_URL = "https://aazofjsssobejhkyyiqv.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhem9manNzc29iZWpoa3l5aXF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxMTI1NDUsImV4cCI6MjA3MzY4ODU0NX0.guYlxaV5RwTlTVFoUhpER0KWEIGPay8svLsxMwyRUyM";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ======= State =======
+    let currentStep = 1;
+    const totalSteps = 4;
+    const minInvestment = 80000;
+    const sharePrice = 1000;
+
+    const state = {
+      fullName: "",
+      email: "",
+      idNumber: "",
+      phone: "",
+      addressText: "",
+      lat: null,
+      lng: null,
+      amount: minInvestment,
+      shares: Math.floor(minInvestment / sharePrice),
+      user: null,
+      popPath: null,
+      docuSealLink: "",
+      hasSigned: false
+      // note: NOT storing applicationId here in this version,
+      // because we just insert on upload
+    };
+
+    // parse ?link= (DocuSeal)
+    {
+      const urlParams = new URLSearchParams(window.location.search);
+      state.docuSealLink = urlParams.get("link") || "";
+      const docLink = document.getElementById("docuSealOpen");
+      if (docLink) {
+        docLink.href = state.docuSealLink || "#";
+      }
+    }
+
+    // ======= Auth guard =======
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      const redirectUrl = encodeURIComponent(window.location.href);
+      window.location.href = `/auth.html?tab=in&redirect=${redirectUrl}`;
+      throw new Error("Redirecting to auth");
+    } else {
+      const me = await supabase.auth.getUser();
+      state.user = me.data.user;
+    }
+
+    // ======= UI bindings =======
+    // next/prev buttons within the flow
+    document.querySelectorAll('[data-next]').forEach(b => b.addEventListener('click', nextStep));
+    document.querySelectorAll('[data-prev]').forEach(b => b.addEventListener('click', prevStep));
+
+    // Amount live calc
+    const amtEl = document.getElementById('investmentAmount');
+    amtEl.addEventListener('input', () => {
+      let amt = parseFloat(amtEl.value || "0");
+      if (isNaN(amt) || amt < minInvestment) {
+        amt = minInvestment;
+        amtEl.value = String(minInvestment);
+      }
+      state.amount = amt;
+      state.shares = Math.floor(amt / sharePrice);
+
+      // update summary card + step 3 payment box
+      document.getElementById('summaryAmount').textContent = `R${amt.toFixed(2)}`;
+      document.getElementById('summaryShares').textContent = state.shares;
+    });
+
+    // Copy DocuSeal link
+    const copyBtn = document.getElementById('copyDocuSealBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        if (!state.docuSealLink) return;
+        navigator.clipboard.writeText(state.docuSealLink).then(() => {
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => { copyBtn.textContent = 'Copy link'; }, 2000);
+        }).catch(() => {
+          copyBtn.textContent = 'Error';
+          setTimeout(() => { copyBtn.textContent = 'Copy link'; }, 2000);
+        });
+      });
+    }
+
+    document.getElementById('toPayment').addEventListener('click', validateDetails);
+
+    // Payment actions
+    document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+      window.location.href = "https://ac771e08-657e-406a-9fb7-dc82bd541742.usrfiles.com/ugd/ac771e_7f8b25db5489452b8d43cceec9e9475c.pdf";
+    });
+
+    document.getElementById('uploadPopBtn').addEventListener('click', uploadPOP);
+
+    // ======= Stepper visuals / nav =======
+    function updateStepper(){
+      const pct = (currentStep / totalSteps) * 100;
+      document.getElementById('progressBar').style.width = `${pct}%`;
+
+      for (let i=1;i<=4;i++){
+        document.getElementById(`s${i}`).classList.toggle('active', i<=currentStep);
+      }
+      document.getElementById('tab1')?.classList.toggle('active', currentStep===1);
+      document.getElementById('tab2')?.classList.toggle('active', currentStep===2);
+      document.getElementById('tab3')?.classList.toggle('active', currentStep===3);
+      document.getElementById('tab4')?.classList.toggle('active', currentStep===4);
+    }
+
+    function gotoStep(n){
+      if (n<1 || n>totalSteps) return;
+      document.getElementById(`step${currentStep}`).classList.add('hidden');
+      currentStep = n;
+      document.getElementById(`step${currentStep}`).classList.remove('hidden');
+      updateStepper();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      if (currentStep === 2) {
+        ensureMapReady();
+      }
+    }
+    function nextStep(){ gotoStep(currentStep+1); }
+    function prevStep(){ gotoStep(currentStep-1); }
+
+    // ======= Validate step 2 =======
+    function validateDetails(){
+      const fullName = document.getElementById('fullName').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const idNumber = document.getElementById('idNumber').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const amt = parseFloat(document.getElementById('investmentAmount').value);
+
+      const hasSigned = document.getElementById('docSigned').checked;
+      state.hasSigned = hasSigned;
+
+      let ok = true;
+      const setErr = (id, show) => document.getElementById(id).classList.toggle('hidden', !show);
+
+      if (!fullName){ setErr('fullNameError', true); ok=false; } else setErr('fullNameError', false);
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ setErr('emailError', true); ok=false; } else setErr('emailError', false);
+      if (!idNumber){ document.getElementById('idError').classList.remove('hidden'); ok=false; } else document.getElementById('idError').classList.add('hidden');
+      if (!phone){ document.getElementById('phoneError').classList.remove('hidden'); ok=false; } else document.getElementById('phoneError').classList.add('hidden');
+      if (!amt || amt < minInvestment){ document.getElementById('amountError').classList.remove('hidden'); ok=false; } else document.getElementById('amountError').classList.add('hidden');
+      if (!state.addressText || state.lat===null || state.lng===null){ alert('Please pick an address on the map.'); ok=false; }
+      if (!hasSigned){ document.getElementById('docSignedError').classList.remove('hidden'); ok=false; } else document.getElementById('docSignedError').classList.add('hidden');
+
+      if (!ok) return;
+
+      // save to state
+      state.fullName = fullName;
+      state.email = email;
+      state.idNumber = idNumber;
+      state.phone = phone;
+      state.amount = amt;
+      state.shares = Math.floor(amt / 1000);
+
+      // hydrate payment
+      document.getElementById('paymentTotal').textContent = `R${state.amount.toFixed(2)}`;
+      document.getElementById('emailRef').textContent = state.email || '—';
+
+      nextStep();
+    }
+
+    // ======= POP upload + DB insert (new row each time) =======
+    async function uploadPOP(){
+      const file = document.getElementById('popFile').files?.[0];
+      const msg = document.getElementById('popMsg');
+      msg.textContent = '';
+      if (!file) { msg.textContent = 'Please select a PDF first.'; return; }
+      if (file.type !== 'application/pdf'){ msg.textContent = 'PDF only, please.'; return; }
+
+      try {
+        // make sure we have a logged in user
+        let userId = state.user?.id;
+        if (!userId) {
+          const me = await supabase.auth.getUser();
+          userId = me.data.user?.id;
+          if (!userId) throw new Error('Not signed in');
+        }
+
+        const ts = Date.now();
+        const path = `pop/${userId}/pop_${ts}.pdf`;
+
+        msg.textContent = 'Uploading…';
+        const { error: upErr } = await supabase.storage.from('documents').upload(path, file, {
+          upsert: true,
+          contentType: 'application/pdf'
+        });
+        if (upErr) throw upErr;
+
+        // Create a brand new application row for THIS submission.
+        // No upsert. No unique conflict.
+        const payload = {
+          user_id: userId,
+          full_name: state.fullName,
+          email: state.email,
+          amount: state.amount,
+          share_price: 1000,
+          shares: state.shares,
+          id_number: state.idNumber,
+          phone: state.phone,
+          address_text: state.addressText,
+          address_lat: state.lat,
+          address_lng: state.lng,
+          pop_path: path,
+          status: 'received',
+          updated_at: new Date().toISOString()
+        };
+
+        const { data: insertRow, error: dbErr } = await supabase
+          .from('investment_applications')
+          .insert(payload)
+          .select()
+          .single();
+
+        if (dbErr) throw dbErr;
+
+        state.popPath = path;
+
+        msg.textContent = 'POP uploaded. Thank you.';
+
+        // you could keep insertRow.id if you want
+        // state.applicationId = insertRow.id;
+
+        // go to final step
+        gotoStep(4);
+      } catch (e) {
+        console.error(e);
+        msg.textContent = e.message || 'Upload failed. Please try again.';
+      }
+    }
+
+    // ======= Leaflet map logic =======
+    let map, marker;
+    let mapInited = false;
+
+    function initMap(){
+      map = L.map('map', { zoomControl: true }).setView([-26.2041, 28.0473], 10); // Joburg-ish
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      map.on('click', async (e) => {
+        setMarker(e.latlng.lat, e.latlng.lng);
+        reverseGeocode(e.latlng.lat, e.latlng.lng);
+      });
+
+      mapInited = true;
+      setTimeout(() => {
+        try { map.invalidateSize(); } catch(_) {}
+      }, 200);
+    }
+
+    function ensureMapReady(){
+      if (!mapInited) {
+        initMap();
+      } else {
+        setTimeout(() => {
+          try { map.invalidateSize(); } catch(_) {}
+        }, 200);
+      }
+    }
+
+    function setMarker(lat, lng){
+      state.lat = lat;
+      state.lng = lng;
+      if (!marker) {
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        marker.on('dragend', () => {
+          const ll = marker.getLatLng();
+          setMarker(ll.lat, ll.lng);
+          reverseGeocode(ll.lat, ll.lng);
+        });
+      } else {
+        marker.setLatLng([lat, lng]);
+      }
+    }
+
+    async function reverseGeocode(lat, lng){
+      try{
+        const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+        const j = await r.json();
+        const disp = j.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        state.addressText = disp;
+        document.getElementById('addressText').value = disp;
+      }catch{
+        const fallback = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        state.addressText = fallback;
+        document.getElementById('addressText').value = fallback;
+      }
+    }
+
+    async function searchAddress(q){
+      if (!q || q.length < 3) return;
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(q)}&limit=1`);
+      const j = await r.json();
+      if (j?.length){
+        const { lat, lon, display_name } = j[0];
+        const latf = parseFloat(lat), lngf = parseFloat(lon);
+        map.setView([latf, lngf], 15);
+        setMarker(latf, lngf);
+        state.addressText = display_name;
+        document.getElementById('addressText').value = display_name;
+      }
+    }
+
+    document.getElementById('addrSearch').addEventListener('keydown', e => {
+      if (e.key === 'Enter'){
+        e.preventDefault();
+        ensureMapReady();
+        searchAddress(e.currentTarget.value.trim());
+      }
+    });
+
+    // init UI
+    updateStepper();
+  </script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Reset password — AlgoHive</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen grid place-items-center bg-gray-50">
+  <main class="w-full max-w-md bg-white p-6 rounded-2xl shadow">
+    <h1 class="text-lg font-semibold">Set a new password</h1>
+    <p id="note" class="mt-1 text-sm text-slate-600">Enter your new password below.</p>
+
+    <div id="msg" class="hidden mt-3 rounded-lg border text-sm px-3 py-2"></div>
+
+    <form id="reset-form" class="mt-4 space-y-3">
+      <input name="password" type="password" placeholder="New password" class="w-full border rounded px-3 py-2" required />
+      <button type="submit" class="w-full rounded px-3 py-2 bg-black text-white">Update password</button>
+    </form>
+  </main>
+
+<script type="module" nonce="ALGOHIVE">
+  import { supabase } from "/js/supabase.js";
+
+  const msg  = document.getElementById("msg");
+  const form = document.getElementById("reset-form");
+  const btn  = form.querySelector('button[type="submit"]');
+
+  function showMsg(text, type="info"){
+    msg.classList.remove("hidden","bg-rose-50","text-rose-700","border-rose-200","bg-emerald-50","text-emerald-700","border-emerald-200");
+    if(type==="success"){ msg.classList.add("bg-emerald-50","text-emerald-700","border-emerald-200"); }
+    if(type==="error"){   msg.classList.add("bg-rose-50","text-rose-700","border-rose-200"); }
+    msg.textContent = text;
+  }
+  function setLoading(on){ btn.disabled = on; btn.textContent = on ? "Updating…" : "Update password"; }
+
+  // Ensure we have a recovery session. If not, set it from the URL hash.
+  async function ensureRecoverySession(){
+    let { data: { session } } = await supabase.auth.getSession();
+    if (session) return session;
+
+    const hash = new URLSearchParams(location.hash.replace(/^#/, ""));
+    const type = hash.get("type");
+    const access_token  = hash.get("access_token");
+    const refresh_token = hash.get("refresh_token");
+
+    if (type === "recovery" && access_token && refresh_token) {
+      const { data, error } = await supabase.auth.setSession({ access_token, refresh_token });
+      if (error) {
+        console.error(error);
+        return null;
+      }
+      return data.session;
+    }
+    return null;
+  }
+
+  const session = await ensureRecoverySession();
+  if (!session) {
+    showMsg("Recovery link invalid or expired. Click the email link again.", "error");
+    form.classList.add("hidden");
+  }
+
+  form.addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    try {
+      setLoading(true);
+      const password = e.target.password.value;
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      showMsg("Password updated. Redirecting…", "success");
+      setTimeout(()=> location.replace("/home.html"), 800);
+    } catch (err){
+      showMsg(err.message || "Failed to update password.", "error");
+    } finally {
+      setLoading(false);
+    }
+  });
+</script>
+
+</body>
+</html>
